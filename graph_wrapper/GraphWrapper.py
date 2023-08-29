@@ -111,6 +111,13 @@ class GraphWrapper():
 
         graph_filtered = GraphWrapper(graph_obj = nx.subgraph_view(self.graph, filter_node=filter_node_attrs_fn))
         return graph_filtered
+    
+    def filter_graph_by_edge_attributes(self, attrs):
+        def filter_edge_attrs_fn(n1, n2):
+            return attrs.items() <= self.graph[n1][n2].items()
+
+        graph_filtered = GraphWrapper(graph_obj = nx.subgraph_view(self.graph, filter_edge=filter_edge_attrs_fn))
+        return graph_filtered
 
     def filter_graph_by_node_attributes_containted(self, attrs):
         def filter_node_attrs_fn(node):
@@ -242,8 +249,8 @@ class GraphWrapper():
     def get_attributes_of_all_nodes(self):
         return self.graph.nodes(data=True)
     
-    def get_attributes_of_edge(self, edge_id): ### TODO Not  working
-        return self.graph.edges(data=True)[edge_id[0],edge_id[1]]
+    def get_attributes_of_edge(self, edge_id): ### TODO Not working
+        return self.graph.edges[edge_id[0],edge_id[1]]
     
     def get_attributes_of_all_edges(self):
         return self.graph.edges(data=True)
@@ -293,11 +300,21 @@ class GraphWrapper():
     def to_undirected(self):
         self.graph.to_directed()
 
+    def to_directed(self):
+        self.graph.to_directed()
+        
     def stringify_node_ids(self):
         raw_node_ids = list(self.get_nodes_ids())
         str_node_ids = map(str, raw_node_ids)
         mapping = dict(zip(raw_node_ids, str_node_ids))
         self.relabel_nodes(mapping)
+
+    def find_recursive_simple_cycles(self):
+        graph = copy.deepcopy(self.graph)
+        graph = graph.to_directed()
+        simple_cycles = nx.recursive_simple_cycles(graph)
+        return simple_cycles
+
     
     # def make_fully_connected(self):
     #     nodes_IDs = list(self.get_nodes_ids())
