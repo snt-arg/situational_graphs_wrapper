@@ -289,19 +289,28 @@ class GraphWrapper():
 
         return types
     
-    def relabel_nodes(self, mapping = False):
+    def relabel_nodes(self, mapping = False, copy=False):
         if not mapping:
             mapping = dict(zip(self.get_nodes_ids(), range(len(self.get_nodes_ids()))))
         self.unfreeze()
-        self.graph = nx.relabel_nodes(self.graph, mapping=mapping, copy=False)
+        self.graph = nx.relabel_nodes(self.graph, mapping=mapping, copy=copy)
 
         return mapping
     
-    def to_undirected(self):
-        self.graph.to_directed()
+    def to_undirected(self, type = "smooth"):
+        if type == "smooth":
+            self.graph = self.graph.to_undirected()
+        # elif type == "hard":
+        #     self.graph = self.graph.to_undirected()
+        #     current_edges = copy.deepcopy(list(self.get_edges_ids()))
+        #     current_edges_sets = [set(edge) for edge in current_edges]
+        #     to_remove_bool = [current_edges.count(edge) > 1 for edge in current_edges_sets]
+        #     # for edge in current_edges:
+        #     #     print(edge)
+                
 
     def to_directed(self):
-        self.graph.to_directed()
+        self.graph = self.graph.to_directed()
         
     def stringify_node_ids(self):
         raw_node_ids = list(self.get_nodes_ids())
