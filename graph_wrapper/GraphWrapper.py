@@ -64,7 +64,6 @@ class GraphWrapper():
         if not options:
             options = {'node_color': 'red', 'node_size': 50, 'width': 2, 'with_labels' : True}
 
-
         options = self.define_draw_position_option_by_attr(options)
 
         if fig_name:
@@ -76,7 +75,8 @@ class GraphWrapper():
         # ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
         if show:
             plt.show(block=False)
-            plt.pause(0.5)
+            plt.grid()
+            plt.pause(0.2)
 
     
     def define_draw_color_from_node_list(self, options, node_list, unmatched_color = "red", matched_color = "blue"):
@@ -239,9 +239,12 @@ class GraphWrapper():
         return nodes
 
     
-    def set_node_attributes(self, attr_name, values):
-        nx.set_node_attributes(self.graph, values, attr_name)
+    def set_node_attributes(self, attr_name, values_dict):
+        nx.set_node_attributes(self.graph, values_dict, attr_name)
 
+    def set_node_attributes_by_id_attr_dict(self, node_id, attr_dict):
+        for key in attr_dict.keys():
+            self.set_node_attributes(key, {node_id : attr_dict[key]})
 
     def get_attributes_of_node(self, node_id):
         return self.graph.nodes(data=True)[node_id]
@@ -323,6 +326,17 @@ class GraphWrapper():
         graph = graph.to_directed()
         simple_cycles = nx.recursive_simple_cycles(graph)
         return simple_cycles
+    
+    def translate_attr_all_nodes(self, attr_name, addition):
+        values_dict = {}
+        for node_id in self.get_nodes_ids():
+            attr_value = self.get_attributes_of_node(node_id)[attr_name]
+            values_dict[node_id] = attr_value + addition
+        self.set_node_attributes(attr_name, values_dict)
+
+    def merge_graph(self, new_graph):
+        new_nx = nx.compose(self.graph,new_graph.graph)
+        return GraphWrapper(graph_obj = new_nx)
 
     
     # def make_fully_connected(self):
