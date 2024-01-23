@@ -337,6 +337,9 @@ class GraphWrapper():
     def merge_graph(self, new_graph):
         new_nx = nx.compose(self.graph,new_graph.graph)
         return GraphWrapper(graph_obj = new_nx)
+    
+    def is_directed(self):
+        return self.graph.is_directed()
 
     
     # def make_fully_connected(self):
