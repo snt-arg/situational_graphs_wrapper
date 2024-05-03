@@ -340,6 +340,9 @@ class GraphWrapper():
     
     def is_directed(self):
         return self.graph.is_directed()
+    
+    def clone(self):
+        return copy.deepcopy(self)
 
     
     # def make_fully_connected(self):
