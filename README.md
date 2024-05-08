@@ -1,2 +1,2 @@
-# graph_wrapper
+# situational_graphs_wrapper
 Graph wrapper for Networkx library as a tool for Sgraphs reasoning stack

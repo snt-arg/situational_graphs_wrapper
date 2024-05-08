@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 from glob import glob
 
-package_name = 'graph_wrapper'
+package_name = 'situational_graphs_wrapper'
 
 setup(
     name=package_name,
