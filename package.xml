@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>graph_wrapper</name>
+  <name>situational_graphs_wrapper</name>
   <version>0.0.0</version>
-  <description>Graph wrapper for graph_reasoning repo</description>
+  <description>Graph wrapper for situational_graphs_wrapper repo</description>
   <maintainer email="josmilrom@gmail.com">adminpc</maintainer>
   <license>GPLv3</license>
 
