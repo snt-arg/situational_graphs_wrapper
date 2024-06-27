@@ -18,8 +18,8 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='TODO',
+    maintainer='Jose Andres Millan Romera',
     maintainer_email='josmilrom@gmail.com',
-    license='TODO: License declaration',
+    license='GPLv3',
     tests_require=['pytest']
 )
