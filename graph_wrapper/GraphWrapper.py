@@ -167,7 +167,7 @@ class GraphWrapper():
             self.graph = nx.Graph(self.graph)
 
     def define_draw_color_option_by_node_type(self, ):
-        color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange"}
+        color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange", "origin" : "black"}
         color_palette.update({"room" : "cyan", "ws" : "orange"})
         type_list = [node[1]["type"] for node in self.graph.nodes(data=True)]
         colors = [color_palette[node_type] for node_type in type_list]
@@ -343,7 +343,12 @@ class GraphWrapper():
     
     def clone(self):
         return copy.deepcopy(self)
-
+    
+    def edges_of_node(self, node_id):
+        return self.graph.edges(node_id)
+    
+    def to_file(self, path):
+        self.graph.save(path)
     
     # def make_fully_connected(self):
     #     nodes_IDs = list(self.get_nodes_ids())
@@ -414,4 +419,107 @@ class GraphWrapper():
     #     scores = self.computePlanesSimilarity(room_1_translated,room_2_translated)
     #     return False
 
+    def nx_to_hetero(self):
+        import torch
+        from torch_geometric.data import HeteroData
 
+        graph = copy.deepcopy(self.graph)        
+        hetero_data = HeteroData()
+
+        # Identify node types and initialize storage
+        node_types = set([node[1]['type'] for node in graph.nodes(data=True)])
+        for node_type in node_types:
+            hetero_data[node_type].x = []
+
+        # Identify edge types and initialize storage
+        edge_types = set((data['type'] for _, _, data in graph.edges(data=True)))
+        print(f"dbg edge_types {edge_types}")
+        for edge_type in edge_types:
+            example_src_id, example_dst_id, _ = list(self.filter_graph_by_edge_types(edge_type).get_attributes_of_all_edges())[0]
+            src_type = self.get_attributes_of_node(example_src_id)["type"]
+            dst_type = self.get_attributes_of_node(example_dst_id)["type"]
+            hetero_data[(src_type, edge_type, dst_type)].edge_index = []
+            hetero_data[(src_type, edge_type, dst_type)].edge_attr = []
+
+        # Add nodes to hetero_data
+        for node, data in graph.nodes(data=True):
+            node_type = data['type']
+            if 'x' in data:
+                hetero_data[node_type].x.append(data['x'])
+            else:
+                hetero_data[node_type].x.append([0.0])  # Default feature if not provided
+
+        # Convert lists to tensors
+        for node_type in node_types:
+            hetero_data[node_type].x = torch.tensor(hetero_data[node_type].x, dtype=torch.float)
+
+        # Add edges to hetero_data
+        for src, dst, data in graph.edges(data=True):
+            edge_type = data['type']
+            src_type, rel_type, dst_type = edge_type.split('_') ### TODO Fix edge types
+            print(f"dbg hetero_data {hetero_data.edge_types}")
+            hetero_data[(src_type, rel_type, dst_type)].edge_index.append([src, dst])
+            if 'edge_attr' in data:
+                hetero_data[(src_type, rel_type, dst_type)].edge_attr.append(data['edge_attr'])
+            else:
+                hetero_data[(src_type, rel_type, dst_type)].edge_attr.append([0.0])  # Default edge attribute if not provided
+
+        # Convert lists to tensors
+        for edge_type in edge_types:
+            src_type, rel_type, dst_type = edge_type.split('_')
+            edge_index = torch.tensor(hetero_data[(src_type, rel_type, dst_type)].edge_index, dtype=torch.long).t().contiguous()
+            edge_attr = torch.tensor(hetero_data[(src_type, rel_type, dst_type)].edge_attr, dtype=torch.float)
+            hetero_data[(src_type, rel_type, dst_type)].edge_index = edge_index
+            hetero_data[(src_type, rel_type, dst_type)].edge_attr = edge_attr
+
+        return hetero_data
+    
+    def nx_to_homo(self):
+        import torch
+        from torch_geometric.data import Data
+
+        graph = copy.deepcopy(self.graph)    
+        all_x = []
+        all_edge_index = []
+        all_edge_attrs = []
+        node_types = []
+        edge_types = []
+
+        # Create mappings for node and edge types
+        node_type_mapping = {type: i for i, type in enumerate(set(nx.get_node_attributes(graph, 'type').values()))}
+        edge_type_mapping = {type: i for i, type in enumerate(set(data['type'] for _, _, data in graph.edges(data=True)))}
+
+        # Add nodes to all_x and node_types
+        for node, data in graph.nodes(data=True):
+            if 'x' in data:
+                all_x.append(data['x'])
+            else:
+                all_x.append([0.0])  # Default feature if not provided
+            node_types.append(node_type_mapping[data['type']])
+
+        # Add edges to all_edge_index, edge_attrs, and edge_types
+        for src, dst, data in graph.edges(data=True):
+            all_edge_index.append([src, dst])
+            if 'edge_attr' in data:
+                all_edge_attrs.append(data['edge_attr'])
+            else:
+                all_edge_attrs.append([0.0])  # Default edge attribute if not provided
+            edge_types.append(edge_type_mapping[data['type']])
+
+        # Convert lists to tensors
+        x = torch.tensor(all_x, dtype=torch.float)
+        edge_index = torch.tensor(all_edge_index, dtype=torch.long).t().contiguous()
+        edge_attrs = torch.tensor(all_edge_attrs, dtype=torch.float)
+        node_type_indices = torch.tensor(node_types, dtype=torch.long)
+        edge_type_indices = torch.tensor(edge_types, dtype=torch.long)
+
+        # Create a new Data object with the concatenated features and additional attributes
+        homo_data = Data(
+            x=x, 
+            edge_index=edge_index, 
+            edge_attr=edge_attrs, 
+            node_type=node_type_indices, 
+            edge_type=edge_type_indices
+        )
+
+        return homo_data
