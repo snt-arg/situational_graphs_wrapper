@@ -216,11 +216,11 @@ class GraphWrapper():
         self.graph = new_graph
 
     def remove_nodes(self, node_IDs):
-        [self.graph.remove_node(node_ID) for node_ID in node_IDs]
+        self.graph.remove_nodes_from(node_IDs)
 
     def remove_edges(self, edge_IDs):
-        [self.graph.remove_edge(edge_ID[0], edge_ID[1]) for edge_ID in edge_IDs]
-
+        self.graph.remove_edges_from(edge_IDs)
+        
     def remove_all_edges(self):
         self.graph = nx.Graph(self.graph)
         edge_IDs = self.get_edges_ids()
