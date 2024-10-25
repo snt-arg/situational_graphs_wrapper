@@ -12,7 +12,7 @@ SCORE_THR = 0.9
 class GraphWrapper():
     def __init__(self, graph_def = None, graph_obj = None):
         if graph_def:
-            graph = nx.Graph()
+            graph = nx.DiGraph()
             graph.add_nodes_from(graph_def['nodes'])
             graph.add_edges_from(graph_def['edges'])
             self.name = graph_def['name']
@@ -22,13 +22,12 @@ class GraphWrapper():
             self.name = "unknown"
             self.graph = graph_obj
         else:
-            self.graph = nx.Graph()
+            self.graph = nx.DiGraph()
             # print("GraphWrapper: definition of graph not provided. Empty graph created")
-
+        self.graph.to_directed()
 
     def get_graph(self):
         return(self.graph)
-
 
     def categoricalMatch(self, G2, categorical_condition, draw = False):
         graph_matcher = isomorphism.GraphMatcher(self.graph, G2.get_graph(), node_match=categorical_condition, edge_match = lambda *_: True)
@@ -95,20 +94,19 @@ class GraphWrapper():
         def filter_node_types_fn(node):
             return True if self.graph.nodes(data=True)[node]["type"] in types else False
 
-        graph_filtered = GraphWrapper(graph_obj = nx.subgraph_view(self.graph, filter_node=filter_node_types_fn))
+        graph_filtered = GraphWrapper(graph_obj = nx.subgraph_view(self.graph, filter_node=filter_node_types_fn)) ### TODO: thhis changes to undirected
         return graph_filtered
     
     def filter_graph_by_edge_types(self, types):
         def filter_edge_types_fn(n1, n2):
             return True if self.graph[n1][n2]["type"] in types else False
 
-        graph_filtered = GraphWrapper(graph_obj = nx.subgraph_view(self.graph, filter_edge=filter_edge_types_fn))
+        graph_filtered = GraphWrapper(graph_obj = nx.subgraph_view(self.graph, filter_edge=filter_edge_types_fn)) ### TODO: thhis changes to undirected
         return graph_filtered
     
     def filter_graph_by_node_attributes(self, attrs):
         def filter_node_attrs_fn(node):
             return attrs.items() <= self.graph.nodes(data=True)[node].items()
-
         graph_filtered = GraphWrapper(graph_obj = nx.subgraph_view(self.graph, filter_node=filter_node_attrs_fn))
         return graph_filtered
     
@@ -140,7 +138,9 @@ class GraphWrapper():
 
 
     def get_neighbourhood_graph(self, node_name):
-        neighbours = self.graph.neighbors(node_name)
+        predecessors = set(self.graph.predecessors(node_name))
+        successors = set(self.graph.successors(node_name))
+        neighbours = predecessors.union(successors)
         filtered_neighbours_names = list([n for n in neighbours]) + [node_name]
         subgraph = GraphWrapper(graph_obj= self.graph.subgraph(filtered_neighbours_names))
         return(subgraph)
