@@ -523,3 +523,6 @@ class GraphWrapper():
         )
 
         return homo_data
+
+    def remove_self_loops(self):
+        self.graph.remove_edges_from(nx.selfloop_edges(self.graph))
