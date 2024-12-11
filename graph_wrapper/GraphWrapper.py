@@ -164,7 +164,7 @@ class GraphWrapper():
 
     def unfreeze(self):
         if nx.is_frozen(self.graph):
-            self.graph = nx.Graph(self.graph)
+            self.graph = nx.DiGraph(self.graph)
 
     def define_draw_color_option_by_node_type(self, ):
         color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange", "origin" : "black"}
@@ -216,13 +216,15 @@ class GraphWrapper():
         self.graph = new_graph
 
     def remove_nodes(self, node_IDs):
-        self.graph.remove_nodes_from(node_IDs)
+        nodes_to_remove = list(node_IDs)
+        self.graph.remove_nodes_from(nodes_to_remove)
 
     def remove_edges(self, edge_IDs):
-        self.graph.remove_edges_from(edge_IDs)
+        edges_to_remove = list(edge_IDs)
+        self.graph.remove_edges_from(edges_to_remove)
         
     def remove_all_edges(self):
-        self.graph = nx.Graph(self.graph)
+        self.graph = nx.DiGraph(self.graph)
         edge_IDs = self.get_edges_ids()
         self.remove_edges(edge_IDs)
 
