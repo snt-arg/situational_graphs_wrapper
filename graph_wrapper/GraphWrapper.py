@@ -138,12 +138,16 @@ class GraphWrapper():
 
 
     def get_neighbourhood_graph(self, node_name):
+        neighbours = self.get_neighbours_list(node_name)
+        filtered_neighbours_names = neighbours + [node_name]
+        subgraph = GraphWrapper(graph_obj= self.graph.subgraph(filtered_neighbours_names))
+        return(subgraph)
+    
+    def get_neighbours_list(self, node_name):
         predecessors = set(self.graph.predecessors(node_name))
         successors = set(self.graph.successors(node_name))
         neighbours = predecessors.union(successors)
-        filtered_neighbours_names = list([n for n in neighbours]) + [node_name]
-        subgraph = GraphWrapper(graph_obj= self.graph.subgraph(filtered_neighbours_names))
-        return(subgraph)
+        return list([n for n in neighbours])
 
 
     def get_total_number_nodes(self):
@@ -211,9 +215,11 @@ class GraphWrapper():
 
 
     def filterout_unparented_nodes(self):
-        new_graph = copy.deepcopy(self.graph)
-        [new_graph.remove_node(node) for node in self.graph.nodes() if len(list([n for n in self.graph.neighbors(node)])) == 0]
-        self.graph = new_graph
+        self.unfreeze()
+        new_graph = GraphWrapper(graph_obj= copy.deepcopy(self.graph))
+        IDs_to_remove = [node for node in self.graph.nodes() if len(self.get_neighbours_list(node)) == 0]
+        new_graph.remove_nodes(IDs_to_remove)
+        return new_graph
 
     def remove_nodes(self, node_IDs):
         nodes_to_remove = list(node_IDs)
