@@ -534,3 +534,21 @@ class GraphWrapper():
 
     def remove_self_loops(self):
         self.graph.remove_edges_from(nx.selfloop_edges(self.graph))
+
+    def get_degree_range(self):
+        degrees = dict(self.graph.degree()).values()
+        return min(degrees), max(degrees)
+
+    def get_nodes_by_degree(self, accepted_degree):
+        node_ids = list([node for node, degree in self.graph.degree() if degree == accepted_degree])
+        return node_ids
+    
+    def filter_graph_by_degree_range(self, degree_range):
+        filter_in_nodes = []
+        for r in range(degree_range[0], degree_range[1]):
+            filter_in_nodes.extend(self.get_nodes_by_degree(r))
+        nodes_to_remove = set(self.get_nodes_ids()) - set(filter_in_nodes)
+        self.graph.remove_nodes_from(nodes_to_remove)
+        print(f'dbg filter_in_nodes {filter_in_nodes}')
+        print(f'dbg nodes_to_remove {nodes_to_remove}')
+        return self.graph
