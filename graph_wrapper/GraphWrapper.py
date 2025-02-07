@@ -3,8 +3,11 @@ import networkx as nx
 import copy
 from networkx.algorithms import isomorphism
 import matplotlib.pyplot as plt
-import itertools
+from networkx.readwrite import json_graph
+import jsonpickle
 
+import itertools
+import json
 
 SCORE_THR = 0.9
 
@@ -357,7 +360,41 @@ class GraphWrapper():
     
     def to_file(self, path):
         self.graph.save(path)
-    
+            
+    def serialize(self, file_path):
+        '''Function to serialize a NetworkX DiGraph to a JSON file, including adjacency matrix.'''
+        node_list = list(self.get_attributes_of_all_nodes())
+        edge_list = list(self.get_attributes_of_all_edges())
+        data = {
+            "nodes_attributes": node_list,
+            "edges_attributes": edge_list
+        }
+        with open(file_path, 'w+') as _file:
+            _file.write(jsonpickle.encode(data))
+
+    def deserialize(self, file_path):
+        '''Function to deserialize a NetworkX DiGraph from a JSON file, including adjacency matrix.'''
+        self.graph = nx.DiGraph()
+        with open(file_path, 'r+') as _file:
+            data = jsonpickle.decode(_file.read())
+            self.add_nodes(data["nodes_attributes"])
+            self.add_edges(data["edges_attributes"])
+        return self.graph
+
+    #print all nodes and edges attributes
+    def print_attributes(self):
+        print("-------------------------------------------------------------------\n")
+        print("                             NODES\n")
+        print("-------------------------------------------------------------------\n")
+        for node in self.get_attributes_of_all_nodes():
+            print(node)
+        print("-------------------------------------------------------------------\n")
+        print("                             EDGES\n")
+        print("-------------------------------------------------------------------\n")
+        for edge in self.get_attributes_of_all_edges():
+            print(edge)
+        print("-------------------------------------------------------------------\n")
+
     # def make_fully_connected(self):
     #     nodes_IDs = list(self.get_nodes_ids())
     #     current_edges = set(self.get_edges_ids())
