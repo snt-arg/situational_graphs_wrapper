@@ -362,7 +362,7 @@ class GraphWrapper():
         self.graph.save(path)
             
     def serialize(self, file_path):
-        '''Function to serialize a NetworkX DiGraph to a JSON file, including adjacency matrix.'''
+        '''Function to serialize a NetworkX DiGraph to a JSON file'''
         node_list = list(self.get_attributes_of_all_nodes())
         edge_list = list(self.get_attributes_of_all_edges())
         data = {
@@ -373,7 +373,7 @@ class GraphWrapper():
             _file.write(jsonpickle.encode(data))
 
     def deserialize(self, file_path):
-        '''Function to deserialize a NetworkX DiGraph from a JSON file, including adjacency matrix.'''
+        '''Function to deserialize a NetworkX DiGraph from a JSON file'''
         self.graph = nx.DiGraph()
         with open(file_path, 'r+') as _file:
             data = jsonpickle.decode(_file.read())
