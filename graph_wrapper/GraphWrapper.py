@@ -1,3 +1,4 @@
+import pickle
 import numpy as np
 import networkx as nx
 import copy
@@ -360,9 +361,11 @@ class GraphWrapper():
     
     def to_file(self, path):
         self.graph.save(path)
+    
+    # Serialization and deserialization functions
             
     def serialize(self, file_path):
-        '''Function to serialize a NetworkX DiGraph to a JSON file'''
+        '''Function to serialize attributes to a JSON file'''
         node_list = list(self.get_attributes_of_all_nodes())
         edge_list = list(self.get_attributes_of_all_edges())
         data = {
@@ -373,12 +376,29 @@ class GraphWrapper():
             _file.write(jsonpickle.encode(data))
 
     def deserialize(self, file_path):
-        '''Function to deserialize a NetworkX DiGraph from a JSON file'''
+        '''Function to deserialize attributes from a JSON file'''
         self.graph = nx.DiGraph()
         with open(file_path, 'r+') as _file:
             data = jsonpickle.decode(_file.read())
             self.add_nodes(data["nodes_attributes"])
             self.add_edges(data["edges_attributes"])
+        return self.graph
+    
+    def serialize_diGraph(self, file_path):
+        '''Function to serialize a NetworkX DiGraph to a pickle'''
+        node_list = list(self.get_attributes_of_all_nodes())
+        edge_list = list(self.get_attributes_of_all_edges())
+        graph = nx.DiGraph()
+        graph.add_nodes_from(node_list)
+        graph.add_edges_from(edge_list)
+        with open(file_path, "wb") as f:
+            pickle.dump(graph, f)
+
+    def deserialize_diGraph(self, file_path):
+        '''Function to deserialize a NetworkX DiGraph from pickle'''
+        self.graph = nx.DiGraph()
+        with open(file_path, "rb") as f:
+            self.graph = pickle.load(f)
         return self.graph
 
     #print all nodes and edges attributes
