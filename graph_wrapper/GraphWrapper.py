@@ -6,6 +6,7 @@ from networkx.algorithms import isomorphism
 import matplotlib.pyplot as plt
 from networkx.readwrite import json_graph
 import jsonpickle
+import pickle
 
 import itertools
 import json
