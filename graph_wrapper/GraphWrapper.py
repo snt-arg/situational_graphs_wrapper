@@ -144,10 +144,11 @@ class GraphWrapper():
         return(subgraph)
     
     def get_neighbours_list(self, node_name):
-        predecessors = set(self.graph.predecessors(node_name))
-        successors = set(self.graph.successors(node_name))
-        neighbours = predecessors.union(successors)
-        return list([n for n in neighbours])
+        if isinstance(self.graph, nx.DiGraph):
+            nbrs = set(self.graph.predecessors(node_name)) | set(self.graph.successors(node_name))
+        else:  # undirected
+            nbrs = set(self.graph.neighbors(node_name))
+        return list(nbrs)
 
 
     def get_total_number_nodes(self):
