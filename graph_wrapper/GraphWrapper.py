@@ -358,6 +358,20 @@ class GraphWrapper():
     
     def to_file(self, path):
         self.graph.save(path)
+
+    def translate_geometries(self, translation):
+        all_attrs = self.get_attributes_of_all_nodes()
+        for id, attrs in all_attrs:
+            if attrs["viz_type"] == "Point":
+                attrs["center"] = attrs["center"] + translation
+                attrs["viz_data"] = attrs["center"]
+            
+            elif attrs["viz_type"] == "Line":
+                attrs["center"] = attrs["center"] + translation
+                attrs["limits"] = [attrs["limits"][0] + translation, attrs["limits"][1] + translation]
+                attrs["viz_data"] = attrs["limits"]
+
+
     
     # def make_fully_connected(self):
     #     nodes_IDs = list(self.get_nodes_ids())
