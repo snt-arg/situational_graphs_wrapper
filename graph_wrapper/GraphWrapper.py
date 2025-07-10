@@ -312,6 +312,7 @@ class GraphWrapper():
     def to_undirected(self, type = "smooth"):
         if type == "smooth":
             self.graph = self.graph.to_undirected()
+
         # elif type == "hard":
         #     self.graph = self.graph.to_undirected()
         #     current_edges = copy.deepcopy(list(self.get_edges_ids()))
@@ -362,14 +363,16 @@ class GraphWrapper():
     def translate_geometries(self, translation):
         all_attrs = self.get_attributes_of_all_nodes()
         for id, attrs in all_attrs:
-            if attrs["viz_type"] == "Point":
+            if attrs["viz"]["type"] == "Point":
                 attrs["center"] = attrs["center"] + translation
-                attrs["viz_data"] = attrs["center"]
-            
-            elif attrs["viz_type"] == "Line":
+                attrs["viz"]["center"] = attrs["viz"]["center"] + translation
+
+            elif attrs["viz"]["type"] == "Line":
                 attrs["center"] = attrs["center"] + translation
+                attrs["viz"]["center"] = attrs["viz"]["center"] + translation
+                
                 attrs["limits"] = [attrs["limits"][0] + translation, attrs["limits"][1] + translation]
-                attrs["viz_data"] = attrs["limits"]
+                attrs["viz"]["limits"] = [attrs["viz"]["limits"][0] + translation, attrs["viz"]["limits"][1] + translation]
 
 
     
