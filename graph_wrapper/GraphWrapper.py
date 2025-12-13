@@ -375,6 +375,162 @@ class GraphWrapper():
                 attrs["viz"]["limits"] = [attrs["viz"]["limits"][0] + translation, attrs["viz"]["limits"][1] + translation]
 
 
+    def get_bounding_box(self, include_centers=True, include_limits=True, use_viz=True, default_z=0.0):
+        """
+        Compute an axis-aligned bounding box (AABB) over all nodes, using:
+        - attrs['center'] and/or attrs['viz']['center'] (if include_centers/use_viz)
+        - attrs['limits'] and/or attrs['viz']['limits'] (if include_limits/use_viz)
+        Returns:
+        (min_xyz, max_xyz) as two np.ndarray of shape (3,)
+        """
+        import numpy as np
+
+        points = []
+
+        for _, attrs in self.get_attributes_of_all_nodes():
+            # centers
+            if include_centers:
+                if "center" in attrs:
+                    c = np.asarray(attrs["center"], dtype=float)
+                    if c.shape[0] == 2:  # pad z
+                        c = np.append(c, default_z)
+                    points.append(c[:3])
+
+                if use_viz and isinstance(attrs.get("viz"), dict) and "center" in attrs["viz"]:
+                    c = np.asarray(attrs["viz"]["center"], dtype=float)
+                    if c.shape[0] == 2:
+                        c = np.append(c, default_z)
+                    points.append(c[:3])
+
+            # limits (two endpoints)
+            if include_limits:
+                if "limits" in attrs and isinstance(attrs["limits"], (list, tuple)) and len(attrs["limits"]) == 2:
+                    a = np.asarray(attrs["limits"][0], dtype=float)
+                    b = np.asarray(attrs["limits"][1], dtype=float)
+                    if a.shape[0] == 2: a = np.append(a, default_z)
+                    if b.shape[0] == 2: b = np.append(b, default_z)
+                    points.append(a[:3]); points.append(b[:3])
+
+                if use_viz and isinstance(attrs.get("viz"), dict) and "limits" in attrs["viz"] \
+                and isinstance(attrs["viz"]["limits"], (list, tuple)) and len(attrs["viz"]["limits"]) == 2:
+                    a = np.asarray(attrs["viz"]["limits"][0], dtype=float)
+                    b = np.asarray(attrs["viz"]["limits"][1], dtype=float)
+                    if a.shape[0] == 2: a = np.append(a, default_z)
+                    if b.shape[0] == 2: b = np.append(b, default_z)
+                    points.append(a[:3]); points.append(b[:3])
+
+        if not points:
+            # Fallback: no geometry found — return a zero-sized bbox at origin
+            origin = np.array([0.0, 0.0, 0.0], dtype=float)
+            return origin.copy(), origin.copy()
+
+        P = np.vstack(points)  # (N, 3)
+        min_xyz = P.min(axis=0)
+        max_xyz = P.max(axis=0)
+        return min_xyz, max_xyz
+
+    def get_graph_center(self):
+        g = self  # this GraphWrapper instance
+
+        # Bounding box if available
+        try:
+            min_c, max_c = self.get_bounding_box()
+            return ((np.asarray(min_c, float) + np.asarray(max_c, float)) * 0.5)[:3]
+        except Exception:
+            pass
+
+        # Average node-level coordinates if present
+        coords = []
+        for nid in g.get_nodes_ids():
+            attrs = g.get_attributes_of_node(nid) or {}
+            for key in ("center", "position", "pos", "xyz", "coordinates", "coord"):
+                if key in attrs:
+                    arr = np.asarray(attrs[key], dtype=float)
+                    if arr.shape[0] == 2:
+                        arr = np.append(arr, 0.0)
+                    coords.append(arr[:3])
+                    break
+
+        if coords:
+            return np.vstack(coords).mean(axis=0)
+
+        # Fallback
+        return np.array([0.0, 0.0, 0.0], dtype=float)
+    
+    def recalculate_hierarchy_centers(self):
+        """
+        Recalculates the x, y positions of nodes based on the average positions
+        of their connected child nodes in the hierarchy#
+        
+        Current hierarchy: ws -> Room -> Floor -> Building -> City
+        """
+        # define current hierarchy
+        hierarchy_steps = [
+            ("ws", "room"),
+            ("room", "floor"),
+            ("floor", "building"),
+            ("building", "city")
+        ]
+
+        for child_type, parent_type in hierarchy_steps:
+            # get list of all parent node ids
+            parent_ids = list(self.filter_graph_by_node_types([parent_type]).get_nodes_ids())
+
+            for pid in parent_ids:
+                neighbours = self.get_neighbours_list(pid)
+                
+                sum_x, sum_y, count = 0.0, 0.0, 0
+
+                for nid in neighbours:
+                    attr = self.get_attributes_of_node(nid)
+                    # get x, y regardless of shape 
+                    if attr.get("type") == child_type:
+                        pos = attr.get("center")
+                        if pos is not None and len(pos) >= 2:
+                            sum_x += float(pos[0])
+                            sum_y += float(pos[1])
+                            count += 1
+
+                if count > 0:
+                    avg_x = sum_x / count
+                    avg_y = sum_y / count
+
+                    # get current parent attrs
+                    p_attr = self.get_attributes_of_node(pid)
+                    current_center = np.array(p_attr.get("center", [0,0,0]), dtype=float)
+
+                    # ensure current_center has at least 3 dims (pad z if missing)
+                    if len(current_center) < 3:
+                        current_center = np.pad(current_center, (0, 3-len(current_center)))
+
+                    # construct new center (new x, y; old z)
+                    new_center = np.array([avg_x, avg_y, current_center[2]])
+
+                    # update "center"
+                    p_attr["center"] = new_center
+
+                    # update x
+                    if "x" in p_attr:
+                        # preserve shape of x if it was only 2D
+                        old_x = np.array(p_attr["x"])
+                        if old_x.shape[0] == 2:
+                            p_attr["x"] = new_center[:2]
+                        else:
+                            p_attr["x"] = new_center
+
+                    # update "viz" center
+                    if "viz" in p_attr and isinstance(p_attr["viz"], dict) and "center" in p_attr["viz"]:
+                        viz_c = np.array(p_attr["viz"]["center"], dtype=float)
+
+                        # handle 2d viz centers
+                        if len(viz_c) < 3:
+                            viz_c = np.pad(viz_c, (0, 3-len(viz_c)))
+
+                        # keep viz z offset but update xy
+                        p_attr["viz"]["center"] = np.array([avg_x, avg_y, viz_c[2]])
+
+                    self.update_node_attrs(pid, p_attr)
+
     
     # def make_fully_connected(self):
     #     nodes_IDs = list(self.get_nodes_ids())
