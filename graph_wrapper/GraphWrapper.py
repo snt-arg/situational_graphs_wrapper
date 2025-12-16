@@ -306,7 +306,6 @@ class GraphWrapper():
             mapping = dict(zip(self.get_nodes_ids(), range(len(self.get_nodes_ids()))))
         self.unfreeze()
         self.graph = nx.relabel_nodes(self.graph, mapping=mapping, copy=copy)
-
         return mapping
     
     def to_undirected(self, type = "smooth"):
@@ -726,3 +725,53 @@ class GraphWrapper():
         print(f'dbg filter_in_nodes {filter_in_nodes}')
         print(f'dbg nodes_to_remove {nodes_to_remove}')
         return self.graph
+    
+
+    def _add_complete_viz_attributes_to_graph(self, viz_center_offsets, node_viz_feat_mapping):
+
+        nodes_attrs = self.get_attributes_of_all_nodes()
+
+        for node_id, node_attrs in nodes_attrs:
+            if "viz" not in node_attrs:
+                node_attrs["viz"] = {}
+            if node_attrs["type"] in ["room", "wall","floor","building"]:
+                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"])
+                node_attrs["viz"]["center"][2] = viz_center_offsets[node_attrs["type"]][2]
+                node_attrs["viz"]["type"] = "Point"
+                node_attrs["viz"]["feat"] = node_viz_feat_mapping[node_attrs["type"]]
+                node_attrs["linewidth"] = 1.0
+                node_attrs["alpha"] = 0.5
+
+                
+            elif node_attrs["type"] in ["ws"]:
+                limits = node_attrs["limits"]
+                limits[0][2] = viz_center_offsets[node_attrs["type"]][2]
+                limits[1][2] = viz_center_offsets[node_attrs["type"]][2]
+                node_attrs["viz"]["limits"] = copy.deepcopy(limits)
+                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"])
+                node_attrs["viz"]["center"][2] = viz_center_offsets[node_attrs["type"]][2]
+                node_attrs["viz"]["type"] = "Line"
+                node_attrs["viz"]["feat"] = node_viz_feat_mapping[node_attrs["type"]]
+                node_attrs["viz"]["linewidth"] = 2.0
+                node_attrs["viz"]["alpha"] = 1.0
+
+            self.update_node_attrs(node_id, node_attrs)
+
+        return self.graph
+    
+
+    def randomize_edges(self, percentage):
+        all_nodes = list(self.get_nodes_ids())
+        
+        for node_i, node_j in itertools.combinations(all_nodes, 2):  # Generate all pairs of nodes
+            # Check if the edge exists between node_i and node_j
+            edge_exists = self.graph.has_edge(node_i, node_j)
+            
+            if edge_exists:
+                if np.random.rand() < percentage:
+                    self.graph.remove_edge(node_i, node_j)
+            else:
+                if np.random.rand() < percentage:
+                    self.graph.add_edge(node_i, node_j, **{"type": "default type"})
+
+        return self
