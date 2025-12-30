@@ -472,6 +472,53 @@ class GraphWrapper():
             ("building", "city")
         ]
 
+        # addition for plane only graph (necessary for deconstruction recalculation)
+        plane_types = {"ws", "wall", "wall_ws", "wallsurface"}
+
+        floor_ids = list(self.filter_graph_by_node_types(["floor"]).get_nodes_ids())
+        for fid in floor_ids:
+            neighbours = self.get_neighbours_list(fid)
+
+            # check if floor still has any room children
+            has_room = any(self.get_attributes_of_node(n).get("type") == "room" for n in neighbours)
+            if has_room:
+                continue
+
+            # fallback: use plane neighbors to determine XY
+            sum_x, sum_y, count = 0.0, 0.0, 0
+            for nid in neighbours:
+                attr = self.get_attributes_of_node(nid)
+                if attr.get("type") in plane_types:
+                    pos = attr.get("center")
+                    if pos is not None and len(pos) >= 2:
+                        sum_x += float(pos[0])
+                        sum_y += float(pos[1])
+                        count += 1
+
+            if count > 0:
+                avg_x = sum_x / count
+                avg_y = sum_y / count
+
+                p_attr = self.get_attributes_of_node(fid)
+                current_center = np.array(p_attr.get("center", [0,0,0]), dtype=float)
+                if len(current_center) < 3:
+                    current_center = np.pad(current_center, (0, 3-len(current_center)))
+
+                new_center = np.array([avg_x, avg_y, current_center[2]], dtype=float)
+                p_attr["center"] = new_center
+
+                if "x" in p_attr:
+                    old_x = np.array(p_attr["x"])
+                    p_attr["x"] = new_center[:2] if old_x.shape[0] == 2 else new_center
+
+                if "viz" in p_attr and isinstance(p_attr["viz"], dict) and "center" in p_attr["viz"]:
+                    viz_c = np.array(p_attr["viz"]["center"], dtype=float)
+                    if len(viz_c) < 3:
+                        viz_c = np.pad(viz_c, (0, 3-len(viz_c)))
+                    p_attr["viz"]["center"] = np.array([avg_x, avg_y, viz_c[2]], dtype=float)
+
+                self.update_node_attrs(fid, p_attr)
+
         for child_type, parent_type in hierarchy_steps:
             # get list of all parent node ids
             parent_ids = list(self.filter_graph_by_node_types([parent_type]).get_nodes_ids())
