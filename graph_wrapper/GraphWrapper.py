@@ -229,6 +229,15 @@ class GraphWrapper():
     def remove_edges(self, edge_IDs):
         edges_to_remove = list(edge_IDs)
         self.graph.remove_edges_from(edges_to_remove)
+
+    def remove_all_edges_between_node_types(self, type_1, type_2):
+        edges_to_remove = []
+        for edge in self.get_edges_ids():
+            source_type = self.get_attributes_of_node(edge[0])["type"]
+            target_type = self.get_attributes_of_node(edge[1])["type"]
+            if (source_type == type_1 and target_type == type_2) or (source_type == type_2 and target_type == type_1):
+                edges_to_remove.append(edge)
+        self.remove_edges(edges_to_remove)
         
     def remove_all_edges(self):
         self.graph = nx.DiGraph(self.graph)
