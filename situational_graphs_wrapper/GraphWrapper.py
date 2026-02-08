@@ -66,16 +66,16 @@ class GraphWrapper():
 
         options = self.define_draw_position_option_by_attr(options)
 
-        if fig_name:
-            fig = plt.figure(fig_name, figsize=(200,200))
-            ax = plt.gca()
-            ax.clear()
-        nx.draw(self.graph, **options)
-        # plt.axis('on')
-        # ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
+        fig = plt.figure(fig_name if fig_name is not None else "graph", figsize=(8, 8))
+        ax = fig.gca()
+        ax.clear()
+
+        nx.draw(self.graph, ax=ax, **options)
+        ax.grid(True)
+
         if show:
             plt.show(block=False)
-            plt.grid()
+            # plt.grid()
             plt.pause(0.2)
 
     
@@ -167,7 +167,7 @@ class GraphWrapper():
             self.graph = nx.Graph(self.graph)
 
     def define_draw_color_option_by_node_type(self, ):
-        color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange"}
+        color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange", "Door": "red", "Window": "green"}
         color_palette.update({"room" : "cyan", "ws" : "orange"})
         type_list = [node[1]["type"] for node in self.graph.nodes(data=True)]
         colors = [color_palette[node_type] for node_type in type_list]
