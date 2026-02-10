@@ -736,8 +736,26 @@ class GraphWrapper():
         return self.graph
     
 
-    def _add_complete_viz_attributes_to_graph(self, viz_center_offsets, node_viz_feat_mapping):
+    def _add_complete_viz_attributes_to_graph(self, viz_center_offsets = None, node_viz_feat_mapping = None):
 
+        if viz_center_offsets is None:
+        
+            viz_center_offsets = {"ws": np.array([0, 0, 0]).astype(np.float16), "room": np.array([0, 0, 2]).astype(np.float16),
+                              "wall": np.array([0, 0, 1]).astype(np.float16), "floor": np.array([0, 0, 3]).astype(np.float16),
+                              "building": np.array([0, 0, 4]).astype(np.float16), "object": np.array([0, 0, 0.5]).astype(np.float16),
+                              "city": np.array([0, 0, 5]).astype(np.float16)}
+        
+        if node_viz_feat_mapping is None:
+            node_viz_feat_mapping = {
+                'ws': "black",
+                'room': 'ro',
+                'wall': 'oo',
+                'floor': 'go',
+                'building': 'co',
+                'wall_ws': 'yo',
+                'city': 'ko'
+            }
+            
         nodes_attrs = self.get_attributes_of_all_nodes()
 
         for node_id, node_attrs in nodes_attrs:
