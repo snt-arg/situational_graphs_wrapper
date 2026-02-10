@@ -743,9 +743,8 @@ class GraphWrapper():
         for node_id, node_attrs in nodes_attrs:
             if "viz" not in node_attrs:
                 node_attrs["viz"] = {}
-            if node_attrs["type"] in ["room", "wall","floor","building"]:
-                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"])
-                node_attrs["viz"]["center"][2] = viz_center_offsets[node_attrs["type"]][2]
+            if node_attrs["type"] in ["room", "wall","floor","building","city"]:
+                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"]) + viz_center_offsets[node_attrs["type"]]
                 node_attrs["viz"]["type"] = "Point"
                 node_attrs["viz"]["feat"] = node_viz_feat_mapping[node_attrs["type"]]
                 node_attrs["linewidth"] = 1.0
@@ -754,11 +753,10 @@ class GraphWrapper():
                 
             elif node_attrs["type"] in ["ws"]:
                 limits = node_attrs["limits"]
-                limits[0][2] = viz_center_offsets[node_attrs["type"]][2]
-                limits[1][2] = viz_center_offsets[node_attrs["type"]][2]
+                limits[0][2] = limits[0][2] + viz_center_offsets[node_attrs["type"]][2]
+                limits[1][2] = limits[1][2] + viz_center_offsets[node_attrs["type"]][2]
                 node_attrs["viz"]["limits"] = copy.deepcopy(limits)
-                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"])
-                node_attrs["viz"]["center"][2] = viz_center_offsets[node_attrs["type"]][2]
+                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"]) + viz_center_offsets[node_attrs["type"]]
                 node_attrs["viz"]["type"] = "Line"
                 node_attrs["viz"]["feat"] = node_viz_feat_mapping[node_attrs["type"]]
                 node_attrs["viz"]["linewidth"] = 2.0
