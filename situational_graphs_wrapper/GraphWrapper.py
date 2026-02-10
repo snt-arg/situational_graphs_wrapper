@@ -164,7 +164,10 @@ class GraphWrapper():
 
     def unfreeze(self):
         if nx.is_frozen(self.graph):
-            self.graph = nx.Graph(self.graph)
+            if self.graph.is_directed():
+                self.graph = nx.DiGraph(self.graph)
+            else:
+                self.graph = nx.Graph(self.graph)
 
     def define_draw_color_option_by_node_type(self, ):
         color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange"}
