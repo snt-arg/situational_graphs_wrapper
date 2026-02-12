@@ -417,4 +417,76 @@ class GraphWrapper():
     #     scores = self.computePlanesSimilarity(room_1_translated,room_2_translated)
     #     return False
 
+    def from_2D_to_3D(self):
+        for node_id, node_attrs in self.get_attributes_of_all_nodes():
+            if "center" in node_attrs:
+                c = node_attrs["center"]
+                if len(c) == 2:
+                    node_attrs["center"] = np.array([c[0], c[1], 0.0])
+            if "limits" in node_attrs:
+                lim = node_attrs["limits"]
+                if len(lim[0]) == 2:
+                    node_attrs["limits"] = np.array([[lim[0][0], lim[0][1], 0.0],
+                                                     [lim[1][0], lim[1][1], 0.0]])
+            
+    def from_3D_to_2D(self):
+        for node_id, node_attrs in self.get_attributes_of_all_nodes():
+            if "center" in node_attrs:
+                c = node_attrs["center"]
+                if len(c) == 3:
+                    node_attrs["center"] = np.array([c[0], c[1]])
+            if "limits" in node_attrs:
+                lim = node_attrs["limits"]
+                if len(lim[0]) == 3:
+                    node_attrs["limits"] = np.array([[lim[0][0], lim[0][1]],
+                                                     [lim[1][0], lim[1][1]]])
+            
 
+    # ## Visualization functions
+    def _add_complete_viz_attributes_to_graph(self, viz_center_offsets = None, node_viz_feat_mapping = None):
+
+        if viz_center_offsets is None:
+        
+            viz_center_offsets = {"ws": np.array([0, 0, 0]).astype(np.float16), "room": np.array([0, 0, 2]).astype(np.float16),
+                              "wall": np.array([0, 0, 1]).astype(np.float16), "floor": np.array([0, 0, 3]).astype(np.float16),
+                              "building": np.array([0, 0, 4]).astype(np.float16), "object": np.array([0, 0, 0.5]).astype(np.float16),
+                              "city": np.array([0, 0, 5]).astype(np.float16)}
+        
+        if node_viz_feat_mapping is None:
+            node_viz_feat_mapping = {
+                'ws': "black",
+                'room': 'ro',
+                'wall': 'oo',
+                'floor': 'go',
+                'building': 'co',
+                'wall_ws': 'yo',
+                'city': 'ko'
+            }
+            
+        nodes_attrs = self.get_attributes_of_all_nodes()
+
+        for node_id, node_attrs in nodes_attrs:
+            if "viz" not in node_attrs:
+                node_attrs["viz"] = {}
+            if node_attrs["type"] in ["room", "wall","floor","building","city"]:
+                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"]) + viz_center_offsets[node_attrs["type"]]
+                node_attrs["viz"]["type"] = "Point"
+                node_attrs["viz"]["feat"] = node_viz_feat_mapping[node_attrs["type"]]
+                node_attrs["linewidth"] = 1.0
+                node_attrs["alpha"] = 0.5
+
+                
+            elif node_attrs["type"] in ["ws"]:
+                limits = node_attrs["limits"]
+                limits[0][2] = limits[0][2] + viz_center_offsets[node_attrs["type"]][2]
+                limits[1][2] = limits[1][2] + viz_center_offsets[node_attrs["type"]][2]
+                node_attrs["viz"]["limits"] = copy.deepcopy(limits)
+                node_attrs["viz"]["center"] = copy.deepcopy(node_attrs["center"]) + viz_center_offsets[node_attrs["type"]]
+                node_attrs["viz"]["type"] = "Line"
+                node_attrs["viz"]["feat"] = node_viz_feat_mapping[node_attrs["type"]]
+                node_attrs["viz"]["linewidth"] = 2.0
+                node_attrs["viz"]["alpha"] = 1.0
+
+            self.update_node_attrs(node_id, node_attrs)
+
+        return self.graph
