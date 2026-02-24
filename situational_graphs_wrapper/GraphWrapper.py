@@ -167,8 +167,10 @@ class GraphWrapper():
             self.graph = nx.Graph(self.graph)
 
     def define_draw_color_option_by_node_type(self, ):
-        color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange", "Door": "red", "Window": "green"}
-        color_palette.update({"room" : "cyan", "ws" : "orange"})
+        color_palette = {"floor" : "orange", "Infinite Room" : "cyan", "Finite Room" : "cyan", "Plane" : "orange"}
+        color_palette.update({"room" : "cyan", "ws" : "orange", "wall" : "purple", "origin" : "black"})
+        color_palette.update({"Door" : "red", "Window" : "green", "Object" : "grey"})
+        color_palette.update({"door" : "red", "window" : "green", "object" : "grey"})
         type_list = [node[1]["type"] for node in self.graph.nodes(data=True)]
         colors = [color_palette[node_type] for node_type in type_list]
 
@@ -344,6 +346,45 @@ class GraphWrapper():
     def clone(self):
         return copy.deepcopy(self)
 
+    def edges_of_node(self, node_id):
+        return self.graph.edges(node_id)
+
+    def to_file(self, path):
+        self.graph.save(path)
+
+    def translate_geometries(self, translation):
+        all_attrs = self.get_attributes_of_all_nodes()
+        for id, attrs in all_attrs:
+            if attrs["viz"]["type"] == "Point":
+                attrs["center"] = attrs["center"] + translation
+                attrs["viz"]["center"] = attrs["viz"]["center"] + translation
+
+            elif attrs["viz"]["type"] == "Line":
+                attrs["center"] = attrs["center"] + translation
+                attrs["viz"]["center"] = attrs["viz"]["center"] + translation
+
+                attrs["limits"] = [attrs["limits"][0] +
+                                   translation, attrs["limits"][1] + translation]
+                attrs["viz"]["limits"] = [attrs["viz"]["limits"][0] +
+                                          translation, attrs["viz"]["limits"][1] + translation]
+
+    def rotate_geometries(self, rotation_matrix):
+        all_attrs = self.get_attributes_of_all_nodes()
+        for id, attrs in all_attrs:
+            if attrs["viz"]["type"] == "Point":
+                attrs["center"] = rotation_matrix.dot(attrs["center"])
+                attrs["viz"]["center"] = rotation_matrix.dot(
+                    attrs["viz"]["center"])
+
+            elif attrs["viz"]["type"] == "Line":
+                attrs["center"] = rotation_matrix.dot(attrs["center"])
+                attrs["viz"]["center"] = rotation_matrix.dot(
+                    attrs["viz"]["center"])
+
+                attrs["limits"] = [rotation_matrix.dot(
+                    attrs["limits"][0]), rotation_matrix.dot(attrs["limits"][1])]
+                attrs["viz"]["limits"] = [rotation_matrix.dot(
+                    attrs["viz"]["limits"][0]), rotation_matrix.dot(attrs["viz"]["limits"][1])]
     
     # def make_fully_connected(self):
     #     nodes_IDs = list(self.get_nodes_ids())
