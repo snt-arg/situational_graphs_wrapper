@@ -171,6 +171,7 @@ class GraphWrapper():
         color_palette.update({"room" : "cyan", "ws" : "orange", "wall" : "purple", "origin" : "black"})
         color_palette.update({"Door" : "red", "Window" : "green", "Object" : "grey"})
         color_palette.update({"door" : "red", "window" : "green", "object" : "grey"})
+        color_palette.update({"chair" : "red", "table" : "green"})
         type_list = [node[1]["type"] for node in self.graph.nodes(data=True)]
         colors = [color_palette[node_type] for node_type in type_list]
 
