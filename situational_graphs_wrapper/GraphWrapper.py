@@ -230,14 +230,15 @@ class GraphWrapper():
         self.remove_edges(edge_IDs)
 
     def find_nodes_by_attrs(self, attrs):
-        def test_fn(a,b):
+        def test_fn(a, b):
             try:
+                import numpy as np
+                if isinstance(b, np.ndarray) or isinstance(a, np.ndarray):
+                    return np.array_equal(a, b)
                 iter(b)
                 return a in b
             except TypeError:
                 return a == b
-            else:
-                return False
         nodes = [x for x,y in self.graph.nodes(data=True) if all(test_fn(attrs[attr], y[attr]) for attr in attrs.keys())]
         return nodes
 
