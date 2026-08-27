@@ -800,3 +800,59 @@ class GraphWrapper():
                     self.graph.add_edge(node_i, node_j, **{"type": "default type"})
 
         return self
+    
+    def upgrade_objects_type(self):
+        graph_attrs = self.get_attributes_of_all_nodes()
+        for node in graph_attrs:
+            if node[1]["type"] == "object": 
+                node[1]["type"] = node[1].get("object_type", "generic_object")
+
+        return self
+    
+    def define_ws_length_from_limits(self):
+        graph_attrs = self.get_attributes_of_all_nodes()
+        for node in graph_attrs:
+            if node[1]["type"] == "ws": 
+                limits = node[1].get("limits", None)
+                if limits is not None:
+                    length = np.linalg.norm(np.array(limits[1]) - np.array(limits[0]))
+                    node[1]["length"] = length
+
+        return self
+    
+    def define_node_type_from_onehot(self, mapping, onehot_attr_name):
+        graph_attrs = self.get_attributes_of_all_nodes()
+        for node in graph_attrs:
+            onehot = node[1].get(onehot_attr_name, None)
+            if onehot is not None:
+                max_index = np.argmax(onehot)
+                node[1]["type"] = mapping[max_index]
+
+        return self
+    
+    def define_type_on_untyped_edges(self, default_type="default_edge"):
+        graph_attrs = self.get_attributes_of_all_edges()
+        for edge in graph_attrs:
+            if "type" not in edge[2].keys():
+                edge[2]["type"] = default_type
+
+        return self
+    
+
+    def adapt_from_ifh_dataset(self):
+        for node_id, node_attrs in self.get_attributes_of_all_nodes():
+            if node_attrs["type"] == "room":
+                pass
+            elif node_attrs["type"] == "ws":
+                if "length" not in node_attrs.keys():
+                    node_attrs["length"] = node_attrs["node_length"]
+                if "normal" not in node_attrs.keys():
+                    node_attrs["normal"] = node_attrs["node_normal"]
+
+        self.define_type_on_untyped_edges("training")
+
+
+        return self
+    
+    def has_edges(self):
+        return len(self.get_edges_ids()) > 0
